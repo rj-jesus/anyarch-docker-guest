@@ -1,20 +1,24 @@
 # anyarch-docker-guest
 
 This README summarizes a method for running docker guest systems of arbitrary
-architectures on a single host system. It is highly based on the approaches
-described in [1] and [2]. Interested readers who would like to learn how the
-method works are referred to those references. The main contribution of this
-repository is providing an up-to-date patch for QEMU that brings the original
-work of Petros Angelatos [3] in line with current versions of the emulator
-software. The patch has been submitted for inclusion in QEMU and can be tracked
-in [5].
+architectures on a given host system. It is largely based on the approaches
+described in [1] and [2]. In brief, the method works by running syscalls issued
+in the docker guest system through QEMU, which makes the interface between host
+and guest system. Interested readers who would like to learn how the method
+works in more detail are referred to the aforementioned references. The main
+contribution of this repository is to provide an updated patch for QEMU that
+brings the original work of Petros Angelatos [3] in line with current versions
+of the emulator. The patch has been submitted for inclusion in QEMU and can be
+tracked in [5].
+
+Edit 2022/02/24: Patch bumped to QEMU-6.2.0.
 
 ## Goal
 
-By following the steps below, we will create and run a docker container based
-on Debian arm64 [4] on an x86 host. The choice of architecture is quite
-arbitrary: as long as QEMU supports it, any guest/host architecture should
-work.
+The following steps describe how to run a guest docker container based on
+Debian AArch64 [4] on an x86 host. The choice of architecture is rather
+arbitrary (as long as QEMU supports it, any guest/host architecture should
+work).
 
 ## Steps
 
@@ -22,19 +26,20 @@ work.
 
 ```bash
 git clone git://git.qemu.org/qemu.git
+git checkout v6.2.0
 cd qemu
-git apply ../v4-linux-user-add-option-to-intercept-execve-syscalls.diff
-./configure --target-list=aarch64-linux-user --static
+git apply ../v5-linux-user-add-option-to-intercept-execve-syscalls.diff
+./configure --static --target-list=aarch64-linux-user
 make
 ```
 
-This will create a static QEMU emulator patched to include a new option,
-`--execve`, that can be used to issue the recursive (emulated) execution of a
-process and the children it may create.
+This will create a static QEMU emulator, `build/qemu-aarch64`, patched with a
+new option, `--execve`, that can be used to issue the recursive emulated
+execution of a process and its children.
 
 Next, we copy the static binary to outside the QEMU tree.
 ```bash
-cp aarch64-linux-user/qemu-aarch64 ..
+cp build/qemu-aarch64 ..
 ```
 
 ### 2. Create a docker image for the architecture you wish to emulate
